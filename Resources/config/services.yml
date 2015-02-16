@@ -1,0 +1,4 @@
+services:
+    fra_casula_php_sandbox:
+        class: FraCasula\Bundle\PhpSandboxBundle\Services\PhpSandbox
+        arguments: [%kernel.cache_dir%]
