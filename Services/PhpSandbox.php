@@ -89,8 +89,7 @@ class PhpSandbox
      * @param boolean $forceStartTag
      * @return string PHP Code with starting tag <?php
      */
-    private function preparePhpCode($code, $error_reporting = false, $forceStartTag = true)
-    {
+    private function preparePhpCode($code, $error_reporting = false, $forceStartTag = true) {
         $errInstruction = self::CODE_SNIPPET_ERROR_REPORTING;
         $err = $error_reporting ? $errInstruction : '';
 
@@ -110,7 +109,7 @@ class PhpSandbox
      */
     public function getSanboxDir()
     {
-        return self::WRAPPER . '://';
+        return self::WRAPPER.'://';
     }
 
     /**
@@ -124,7 +123,7 @@ class PhpSandbox
      */
     public function run($code, $variables = [])
     {
-	    $_SANDBOX = $variables;
+        $_SANDBOX = $variables;
         unset($variables);
 
         $_PhpSandboxFullPath = $this->getSanboxDir().$this->getUniqueToken($code).'.php';
