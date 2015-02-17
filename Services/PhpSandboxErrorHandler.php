@@ -24,13 +24,12 @@ class PhpSandboxErrorHandler
     /**
      * @var array
      */
-    private static $patterns = array
-    (
+    private static $patterns = [
         self::PHP_PARSE_ERROR => '/PHP Parse error:/',
         self::PHP_FATAL_ERROR => '/PHP Fatal error:/',
         self::PHP_WARNING => '/PHP Warning:/',
         self::PHP_NOTICE => '/PHP Notice:/'
-    );
+    ];
 
     /**
      * Check the error log for the first PHP error and throws the relative exception
