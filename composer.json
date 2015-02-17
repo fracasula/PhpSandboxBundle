@@ -18,11 +18,9 @@
 	],
 	"minimum-stability": "dev",
 	"require": {
-		"php": ">=5.4",
-		"symfony/filesystem": "~2.7."
+		"php": ">=5.4"
 	},
 	"require-dev": {
-		"mikey179/vfsStream": "1.4.*@dev",
 		"phpunit/phpunit": "4.5.0"
 	},
 	"autoload": {

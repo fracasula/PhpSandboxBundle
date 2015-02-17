@@ -3,8 +3,6 @@
 namespace FraCasula\Bundle\PhpSandboxBundle\Tests\Services;
 
 use PHPUnit_Framework_TestCase as TestCase;
-use org\bovigo\vfs\vfsStream;
-use org\bovigo\vfs\vfsStreamDirectory;
 use FraCasula\Bundle\PhpSandboxBundle\Services\PhpSandbox;
 use FraCasula\Bundle\PhpSandboxBundle\Services\PhpSandboxErrorHandler as ErrorHandler;
 
@@ -22,28 +20,12 @@ class PhpSandboxTest extends TestCase
     private $phpSandbox;
 
     /**
-     * @var vfsStreamDirectory
-     */
-    private $cacheDir;
-
-    /**
      * {@inheritdoc}
      */
     public function setUp()
     {
-        $this->cacheDir = vfsStream::setup('cache');
-        $this->phpSandbox = new PhpSandbox(vfsStream::url('cache'));
-    }
-
-    /**
-     * @return \org\bovigo\vfs\vfsStreamContent
-     */
-    private function getSandboxDir()
-    {
-        $sandboxDir = $this->cacheDir->getChild('fra_casula_php_sandbox');
-        $this->assertInstanceOf('\org\bovigo\vfs\vfsStreamContent', $sandboxDir);
-
-        return $sandboxDir;
+        $streamWrapperClassName = '\FraCasula\Bundle\PhpSandboxBundle\Stream\SandboxStream';
+        $this->phpSandbox = new PhpSandbox($streamWrapperClassName);
     }
 
     /**
@@ -55,25 +37,6 @@ class PhpSandboxTest extends TestCase
     }
 
     /**
-     * Asserts that the sandbox directory does not contain any file
-     */
-    private function assertPhpSandboxDirIsEmpty()
-    {
-        $this->assertFalse($this->getSandboxDir()->hasChildren(), 'PHP Sandbox dir is not empty');
-    }
-
-    /**
-     * @covers \FraCasula\Bundle\PhpSandboxBundle\Services\PhpSandbox::mkdir
-     */
-    public function testMkDir()
-    {
-        $this->getSandbox()->run('echo 1;');
-
-        $this->assertTrue($this->getSandboxDir()->isWritable(vfsStream::OWNER_USER_1, vfsStream::GROUP_USER_1));
-        $this->assertPhpSandboxDirIsEmpty();
-    }
-
-    /**
      * @covers \FraCasula\Bundle\PhpSandboxBundle\Services\PhpSandbox::run
      */
     public function testRunEcho()
@@ -81,8 +44,6 @@ class PhpSandboxTest extends TestCase
         $this->expectOutputString('6');
 
         echo $this->getSandbox()->run('echo 3 * 2;');
-
-        $this->assertPhpSandboxDirIsEmpty();
     }
 
     /**
@@ -107,8 +68,6 @@ echo \$one->x;
 PHP;
 
         echo $this->getSandbox()->run($php);
-
-        $this->assertPhpSandboxDirIsEmpty();
     }
 
     /**
@@ -140,8 +99,6 @@ PHP;
 
         $test = new \MyApp\MyTest\MyPackage\Test();
         $test->printTest($expectedString);
-
-        $this->assertPhpSandboxDirIsEmpty();
     }
 
     /**
@@ -166,8 +123,6 @@ PHP;
         $res = $this->getSandbox()->runStandalone($php, $variables);
 
         $this->assertEquals($res, '162');
-
-        $this->assertPhpSandboxDirIsEmpty();
     }
 
     /**
@@ -177,7 +132,6 @@ PHP;
     public function testRunStandaloneNotice()
     {
         $this->getSandbox()->runStandalone('echo $x[0];');
-        $this->assertPhpSandboxDirIsEmpty();
     }
 
     /**
@@ -187,7 +141,6 @@ PHP;
     public function testRunStandaloneWarning()
     {
         $this->getSandbox()->runStandalone('include("file_that_does_not_exist");');
-        $this->assertPhpSandboxDirIsEmpty();
     }
 
     /**
@@ -202,7 +155,6 @@ PHP;
         );
 
         $this->getSandbox()->runStandalone('x x x');
-        $this->assertPhpSandboxDirIsEmpty();
     }
 
     /**
@@ -217,7 +169,6 @@ PHP;
         );
 
         $this->getSandbox()->runStandalone('call_to_undefined_function();');
-        $this->assertPhpSandboxDirIsEmpty();
     }
 
     /**
@@ -238,8 +189,6 @@ ErrorHandler::checkErrorLog('whatever');
 PHP;
 
         $this->getSandbox()->runStandalone($php);
-
-        $this->assertPhpSandboxDirIsEmpty();
     }
 
     /**

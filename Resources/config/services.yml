@@ -1,4 +1,8 @@
+parameters:
+    fra_casula_stream_wrapper_sandbox: '\FraCasula\Bundle\PhpSandboxBundle\Stream\SandboxStream'
+
 services:
     fra_casula_php_sandbox:
         class: FraCasula\Bundle\PhpSandboxBundle\Services\PhpSandbox
-        arguments: [%kernel.cache_dir%]
+        arguments:
+            - %fra_casula_stream_wrapper_sandbox%

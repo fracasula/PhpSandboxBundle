@@ -2,7 +2,6 @@
 
 namespace FraCasula\Bundle\PhpSandboxBundle\Services;
 
-use Symfony\Component\Filesystem\Filesystem;
 use FraCasula\Bundle\PhpSandboxBundle\Services\PhpSandboxErrorHandler as ErrorHandler;
 
 /**
@@ -13,17 +12,8 @@ use FraCasula\Bundle\PhpSandboxBundle\Services\PhpSandboxErrorHandler as ErrorHa
  */
 class PhpSandbox
 {
+    const WRAPPER = 'sandbox';
     const CODE_SNIPPET_ERROR_REPORTING = "ini_set('display_errors', '1'); error_reporting(E_ALL);";
-
-    /**
-     * @var string
-     */
-    private $cacheDir;
-
-    /**
-     * @var Filesystem
-     */
-    private $filesystem;
 
     /**
      * @var string
@@ -31,12 +21,17 @@ class PhpSandbox
     private $lastPhpCode;
 
     /**
-     * @param string $cacheDir
+     * Constructor
+     *
+     * @param string $streamWrapperClassName
      */
-    public function __construct($cacheDir)
+    public function __construct($streamWrapperClassName)
     {
-        $this->cacheDir = $cacheDir;
-        $this->filesystem = new Filesystem();
+        $registered = in_array(self::WRAPPER, stream_get_wrappers());
+
+        if (!$registered) {
+            stream_wrapper_register(self::WRAPPER, $streamWrapperClassName);
+        }
     }
 
     /**
@@ -45,32 +40,6 @@ class PhpSandbox
     public function getPhpBinary()
     {
         return PHP_BINARY;
-    }
-
-    /**
-     * @return string cache dir
-     */
-    public function getCacheDir()
-    {
-        return $this->cacheDir;
-    }
-
-    /**
-     * Returns the PHP Sandbox script dir
-     *
-     * @return string PHP Sandbox script dir
-     */
-    public function getPhpSandboxDir()
-    {
-        return $this->getCacheDir().'/fra_casula_php_sandbox';
-    }
-
-    /**
-     * @return Filesystem
-     */
-    public function getFilesystem()
-    {
-        return $this->filesystem;
     }
 
     /**
@@ -92,17 +61,6 @@ class PhpSandbox
     public function getLastPhpCode()
     {
         return $this->lastPhpCode;
-    }
-
-    /**
-     * Creates the sandbox directory where new php scripts will be written.
-     * The sandbox directory will be created into the kernel cache dir.
-     */
-    private function mkdir()
-    {
-        $this->getFilesystem()->mkdir(
-            $this->getPhpSandboxDir()
-        );
     }
 
     /**
@@ -148,6 +106,14 @@ class PhpSandbox
     }
 
     /**
+     * @return string
+     */
+    public function getSanboxDir()
+    {
+        return self::WRAPPER . '://';
+    }
+
+    /**
      * Runs the PHP Code in the current environment.
      * Therefore classes and functions available in your script are also available in the new PHP code.
      *
@@ -158,18 +124,13 @@ class PhpSandbox
      */
     public function run($code, $variables = [])
     {
-        $_SANDBOX = $variables;
+	    $_SANDBOX = $variables;
         unset($variables);
 
-        $_PhpSandboxFullPath = $this->getPhpSandboxDir().DIRECTORY_SEPARATOR.$this->getUniqueToken($code).'.php';
+        $_PhpSandboxFullPath = $this->getSanboxDir().$this->getUniqueToken($code).'.php';
 
-        $this->mkdir();
         $this->preparePhpCode($code);
 
-        /**
-         * @todo Symfony2 Filesystem component dumpFile() not compatible with streams
-         * @url https://github.com/symfony/symfony/issues/10018
-         */
         file_put_contents($_PhpSandboxFullPath, $this->getLastPhpCode());
 
         $_PhpSandboxBufferBackup = null;
@@ -184,7 +145,6 @@ class PhpSandbox
         try {
             include_once($_PhpSandboxFullPath);
         } catch (\Exception $e) {
-            $this->getFilesystem()->remove($_PhpSandboxFullPath);
             throw $e;
         }
 
@@ -195,8 +155,6 @@ class PhpSandbox
             ob_start();
             echo $_PhpSandboxBufferBackup;
         }
-
-        $this->getFilesystem()->remove($_PhpSandboxFullPath);
 
         return $_PhpSandBoxResult;
     }
@@ -213,17 +171,13 @@ class PhpSandbox
     public function runStandalone($code, $variables = [])
     {
         $stream = null;
-        $wdir = $this->getPhpSandboxDir();
+        $descriptorSpec = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w']
+        ];
 
-        $descriptorSpec =
-            [
-                0 => ['pipe', 'r'],
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w']
-            ];
-
-        $this->mkdir();
-        $process = proc_open($this->getPhpBinary(), $descriptorSpec, $pipes, $wdir, $variables);
+        $process = proc_open($this->getPhpBinary(), $descriptorSpec, $pipes, null, $variables);
 
         if (is_resource($process)) {
             $this->preparePhpCode($code, false);
