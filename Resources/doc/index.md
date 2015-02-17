@@ -106,12 +106,13 @@ use FraCasula\Bundle\PhpSandboxBundle\Exception\PhpSandboxError;
 
 try
 {
-	$php = '$arr = array(1, 2, 3);';
-	$sandbox->runStandalone('echo $arr[100];');
+	$sandbox->runStandalone('$arr = array(1, 2, 3); echo $arr[100];');
 }
 catch (PhpSandboxNotice $e)
 {
-	echo "Notice occurred: " . $e->getMessage();
+	// this will print:
+	// [NOTICE OCCURRED] PHP Notice:  Undefined offset: 100 in - on line 1
+	echo '[NOTICE OCCURRED] ' . $e->getMessage();
 }
 ```
 
